@@ -35,14 +35,42 @@ router.get('/:code', async (req, res, next) => {
     const company = companyResult.rows[0]
     const invoices = invoiceResult.rows
 
-    console.log(company)
-    console.log(invoices)
-
     company.invoices = invoices.map((invoice) => invoice.id)
 
-    console.log(company.invoices)
-
     return res.json({ company: company })
+  } catch (err) {
+    return next(err)
+  }
+})
+
+router.post('/', async (req, res, next) => {
+  try {
+    const { code, name, description } = req.body
+    const results = await db.query(
+      `INSERT INTO companies (code, name, description) VALUES ($1, $2, $3) RETURNING *`,
+      [code, name, description],
+    )
+    return res.status(201).json({ company: results.rows[0] })
+  } catch (err) {
+    return next(err)
+  }
+})
+
+router.put('/:code', async (req, res, next) => {
+  try {
+    let { name, description } = req.body
+    let { code } = req.params
+
+    const results = await db.query(
+      `UPDATE companies SET name=$1, description=$2 WHERE code=$3 RETURNING *`,
+      [code, description, name],
+    )
+
+    if (results.rows.length === 0) {
+      throw new ExpressError(`No company with code of: ${code}`, 404)
+    } else {
+      return res.json({ company: results.row[0] })
+    }
   } catch (err) {
     return next(err)
   }
