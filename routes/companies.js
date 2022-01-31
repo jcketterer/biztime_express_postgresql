@@ -59,18 +59,28 @@ router.post('/', async (req, res, next) => {
 router.put('/:code', async (req, res, next) => {
   try {
     let { name, description } = req.body
-    let { code } = req.params
+    let code = req.params.code
 
     const results = await db.query(
       `UPDATE companies SET name=$1, description=$2 WHERE code=$3 RETURNING *`,
-      [code, description, name],
+      [name, description, code],
     )
 
     if (results.rows.length === 0) {
       throw new ExpressError(`No company with code of: ${code}`, 404)
     } else {
-      return res.json({ company: results.row[0] })
+      return res.json({ company: results.rows[0] })
     }
+  } catch (err) {
+    return next(err)
+  }
+})
+
+router.delete('/:code', async (req, res, next) => {
+  try {
+    const code = req.params.code
+    const results = await db.query('DELETE FROM companies WHERE code=$1', [code])
+    return res.send({msg: 'Deleted!'})
   } catch (err) {
     return next(err)
   }
